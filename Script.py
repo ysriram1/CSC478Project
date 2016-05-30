@@ -52,11 +52,14 @@ def createData(returnValues = False):
             terms = line.split(',')
             if terms[1] in namePositionDict.keys():
                 continue
+            if 'SF' in terms[2] and 'PF' in terms[2]: 
+                namePositionDict[terms[1]] = 'SF'
+                continue
             if 'SF' in terms[2] and 'SG' in terms[2]: 
-                namePositionDict[terms[1]] = 'SG-SF'
+                namePositionDict[terms[1]] = 'SF'
                 continue
             if 'C' in terms[2] and 'PF' in terms[2]: 
-                namePositionDict[terms[1]]  = 'C-PF'
+                namePositionDict[terms[1]]  = 'PF'
                 continue
             namePositionDict[terms[1]] = terms[2]
             
@@ -227,17 +230,17 @@ pos_rating = pd.DataFrame(Y_position); pos_rating['Def'] = Y_def; pos_rating['Of
 pr_agg = pd.DataFrame(); pr_agg['Def'] = pos_rating.groupby('Position')['Def'].mean()
 pr_agg['Off'] = pos_rating.groupby('Position')['Off'].mean()
 #looking at the Defensive score
-pr_agg.drop(['Off'], axis=1).plot(kind = 'bar'); plt.ylim(ymin=100)#starting at 100 for better comparison
+pr_agg.drop(['Off'], axis=1).plot(kind = 'bar'); plt.ylim(ymin=100, ymax=110)#starting at 100 for better comparison
 plt.ylabel('Mean Rating'); plt.xlabel('Player Position')
 #looking at the Offensive score
-pr_agg.drop(['Def'], axis=1).plot(kind = 'bar'); plt.ylim(ymin=100)#starting at 100 for better comparison
+pr_agg.drop(['Def'], axis=1).plot(kind = 'bar'); plt.ylim(ymin=100, ymax=105)#starting at 100 for better comparison
 plt.ylabel('Mean Rating'); plt.xlabel('Player Position')
 
 ##Looking at the mean ratings for HoF players vs the rest
 hof_rating = pd.DataFrame(Y_HofF, columns = ['HallofFame']); hof_rating['Def'] = Y_def; hof_rating['Off'] = Y_off
 hr_agg = pd.DataFrame(); hr_agg['Def'] = hof_rating.groupby('HallofFame')['Def'].mean()
 hr_agg['Off'] = hof_rating.groupby('HallofFame')['Off'].mean()
-hr_agg.plot(kind = 'bar'); plt.ylim(ymin=100)#starting at 100 for better comparison
+hr_agg.plot(kind = 'bar'); plt.ylim(ymin=100, ymax=120)#starting at 100 for better comparison
 plt.ylabel('Mean Rating'); plt.xlabel('Player Hall of Fame Status')
 
 
