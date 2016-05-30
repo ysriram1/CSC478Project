@@ -52,8 +52,12 @@ def createData(returnValues = False):
             terms = line.split(',')
             if terms[1] in namePositionDict.keys():
                 continue
-            if terms[2] == 'SF-SG': terms[2] == 'SG-SF'
-            if terms[2] == 'C-PF': terms[2] == 'PF-C'
+            if 'SF' in terms[2] and 'SG' in terms[2]: 
+                namePositionDict[terms[1]] = 'SG-SF'
+                continue
+            if 'C' in terms[2] and 'PF' in terms[2]: 
+                namePositionDict[terms[1]]  = 'C-PF'
+                continue
             namePositionDict[terms[1]] = terms[2]
             
     df = pd.DataFrame(data, columns = colNames[0])
@@ -195,7 +199,7 @@ X_pca_2 = PCA(n_components = 2).fit(X_norm).transform(X_norm)
 
 ##Looking at PCA for the position values
 posKV = {} #creating a new variable to color the datapoints properly
-for value, key in enumerate(set(Y_position)): posKV[key] = value + 1
+for value, key in enumerate(set(Y_position)): posKV[key] = value
 colors = [posKV[key] for key in Y_position]
 
 plt.scatter(X_pca_2[:,0], X_pca_2[:,1], c = colors)
@@ -220,17 +224,37 @@ plt.title('Plot of first 2 PCs and datapoints colored by Hall of Fame Status')
 
 ##Looking at the variation between defensive Rating and offensive Rating by the player position
 pos_rating = pd.DataFrame(Y_position); pos_rating['Def'] = Y_def; pos_rating['Off'] = Y_off
-pr_agg = pd.DataFrame(); pr_agg['Def'] = pos_rating.groupby('Position')['Def'].mean() - 100
-pr_agg['Off'] = pos_rating.groupby('Position')['Off'].mean() - 100 #subtracting 100 for better comparison
-pr_agg.plot(kind = 'bar')
-
+pr_agg = pd.DataFrame(); pr_agg['Def'] = pos_rating.groupby('Position')['Def'].mean()
+pr_agg['Off'] = pos_rating.groupby('Position')['Off'].mean()
+#looking at the Defensive score
+pr_agg.drop(['Off'], axis=1).plot(kind = 'bar'); plt.ylim(ymin=100)#starting at 100 for better comparison
+plt.ylabel('Mean Rating'); plt.xlabel('Player Position')
+#looking at the Offensive score
+pr_agg.drop(['Def'], axis=1).plot(kind = 'bar'); plt.ylim(ymin=100)#starting at 100 for better comparison
+plt.ylabel('Mean Rating'); plt.xlabel('Player Position')
 
 ##Looking at the mean ratings for HoF players vs the rest
+hof_rating = pd.DataFrame(Y_HofF, columns = ['HallofFame']); hof_rating['Def'] = Y_def; hof_rating['Off'] = Y_off
+hr_agg = pd.DataFrame(); hr_agg['Def'] = hof_rating.groupby('HallofFame')['Def'].mean()
+hr_agg['Off'] = hof_rating.groupby('HallofFame')['Off'].mean()
+hr_agg.plot(kind = 'bar'); plt.ylim(ymin=100)#starting at 100 for better comparison
+plt.ylabel('Mean Rating'); plt.xlabel('Player Hall of Fame Status')
 
 
 #TASK 1: CLUSTERING
+from sklearn.cluster import KMeans
+from sklearn.metrics import homogeneity_score, completeness_score
+from sklearn.preprocessing import MinMaxScaler
 
-from sklearn.cluster import KMeans, k_means
+
+predictions = KMeans(n_clusters=1).fit_predict(MinMaxScaler().fit_transform(X))
+
+homogeneity_score(colors, predictions)
+
+#TASK 2: LDA on HofF
+
+
+#TASK 3: Prediction on the ratings
 
 
 
