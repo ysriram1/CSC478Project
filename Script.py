@@ -179,6 +179,21 @@ Y_HofF = halloffameVar(names = player)
 #Data Exploration
 ##First we perform PCA and find the number of PCs contibute to 95% of the variation
 ##In order to do this, we first center and scale the data
+
+#Taking at a look at the distribution of the Postion Variable
+
+pd.DataFrame(Y_position).groupby('Position')['Position'].count().plot(kind = 'bar') #relatively evenly spread
+
+#Taking at a look at the distribution of the HofF Variable
+
+pd.DataFrame(Y_HofF, columns = ['HoF']).groupby('HoF')['HoF'].count().plot(kind = 'bar') #far more non-HoF players
+
+#Taking a look at the distribution of the Def and Off Ratings
+pd.DataFrame(Y_def).plot(kind = 'hist')#Defensive Rating
+pd.DataFrame(Y_off).plot(kind = 'hist')#Offensive Rating
+
+
+
 from sklearn.preprocessing import StandardScaler
 from sklearn.decomposition import PCA
 
@@ -250,9 +265,11 @@ from sklearn.metrics import homogeneity_score, completeness_score
 from sklearn.preprocessing import MinMaxScaler
 
 
-predictions = KMeans(n_clusters=1).fit_predict(MinMaxScaler().fit_transform(X))
+predictions = KMeans(n_clusters=5).fit_predict(MinMaxScaler().fit_transform(X))
 
-homogeneity_score(colors, predictions)
+completeness_score(colors, predictions)
+
+#TASK2: K-NN to predict the position
 
 #TASK 2: LDA on HofF
 
