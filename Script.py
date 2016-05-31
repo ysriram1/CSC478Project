@@ -42,6 +42,9 @@ def createData(returnValues = False):
     for datapoint in allData:
         if int(datapoint[2][:4]) in list(range(1979,2017)):
             subData.append(datapoint)
+    
+    df = pd.DataFrame(subData, columns = colNames[0])
+
         
     #Reading in the position labels (Y)
     namePositionDict = {}
@@ -63,10 +66,8 @@ def createData(returnValues = False):
                 continue
             namePositionDict[terms[1]] = terms[2]
             
-    df = pd.DataFrame(data, columns = colNames[0])
-        
+    ##Creating the position Y variable    
     position = []
-
     for name in df.Player:
         position.append(namePositionDict[name])
     
@@ -98,7 +99,7 @@ data, colNames, namePositionDict, offDict, defDict = createData(True)
 #Reading in the data
 df_raw = pd.read_csv('./fullData.csv', na_filter = [' '])
 
-df_raw = df_raw.drop(['Rk', 'Season', 'Age', 'Tm','MP', 'Lg', 'FG%', '2P%', '3P%', 'eFG%', 'FT%', 'TS%'], axis=1) #we will not be using these columns
+df_raw = df_raw.drop(['Lg','Rk', 'Season', 'Age', 'Tm'], axis=1) #we will not be using these columns
 df_raw = df_raw.drop(df_raw.columns[0], axis = 1)
 df_raw.describe()
 df_raw.shape
@@ -119,6 +120,7 @@ def mainDataPreprocess(df = df_raw):
     fill_na = lambda x: x.fillna(x.mean()) if sum(x.isnull()) < x.shape[0] else 0
     mode = lambda x: x.mode() if len(x) > 1 else x #return a single position
     last = lambda x: x.iloc[-1] if len(x) > 1 else x #return the last age of the player
+    
     for colName in df_raw.columns.values:
         if colName == 'Player': continue
         if colName == 'Position': 
@@ -182,15 +184,16 @@ Y_HofF = halloffameVar(names = player)
 
 #Taking at a look at the distribution of the Postion Variable
 
-pd.DataFrame(Y_position).groupby('Position')['Position'].count().plot(kind = 'bar') #relatively evenly spread
+pd.DataFrame(Y_position).groupby('Position')['Position'].count().plot(kind = 'bar'); plt.close() #relatively evenly spread
 
 #Taking at a look at the distribution of the HofF Variable
 
-pd.DataFrame(Y_HofF, columns = ['HoF']).groupby('HoF')['HoF'].count().plot(kind = 'bar') #far more non-HoF players
+pd.DataFrame(Y_HofF, columns = ['HoF']).groupby('HoF')['HoF'].count().plot(kind = 'bar'); plt.close() #far more non-HoF players
 
 #Taking a look at the distribution of the Def and Off Ratings
-pd.DataFrame(Y_def).plot(kind = 'hist')#Defensive Rating
-pd.DataFrame(Y_off).plot(kind = 'hist')#Offensive Rating
+pd.DataFrame(Y_def).plot(kind = 'hist'); plt.close()#Defensive Rating
+
+pd.DataFrame(Y_off).plot(kind = 'hist'); plt.close()#Offensive Rating
 
 
 
@@ -223,7 +226,7 @@ colors = [posKV[key] for key in Y_position]
 plt.scatter(X_pca_2[:,0], X_pca_2[:,1], c = colors)
 plt.xlabel('Principal Component 1'); plt.ylabel('Principal Component 2')
 plt.title('Plot of first 2 PCs and datapoints colored by player position')
-
+plt.close()
 
 #Based on the plot above, we can see that there is a variation among th 10classes. The distinction
 #is not perfectly visible but there definitely seems to be differences with the classes. The arrangement
@@ -234,6 +237,7 @@ plt.title('Plot of first 2 PCs and datapoints colored by player position')
 plt.scatter(X_pca_2[:,0], X_pca_2[:,1], c = Y_HofF)
 plt.xlabel('Principal Component 1'); plt.ylabel('Principal Component 2')
 plt.title('Plot of first 2 PCs and datapoints colored by Hall of Fame Status')
+plt.close()
 
 #Looking at the plot below, there doesnt seem to be any discernable pattern in the data. 
 #this could also be caused as a result of the fact of that there are very few HofF players
@@ -267,9 +271,11 @@ from sklearn.preprocessing import MinMaxScaler
 
 predictions = KMeans(n_clusters=5).fit_predict(MinMaxScaler().fit_transform(X))
 
-completeness_score(colors, predictions)
+homogeneity_score(colors, predictions)
 
 #TASK2: K-NN to predict the position
+
+
 
 #TASK 2: LDA on HofF
 
