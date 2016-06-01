@@ -96,8 +96,9 @@ def createData(returnValues = False):
     df['DefRating'] = defRating
     df['OffRating'] = offRating    
     
+    
     ##We add the values of the Y-column to the current data and create a pandas dataframe for preprocessing
-    df.to_csv('./fullData.csv') #saving the necessary data       
+    df.to_csv('./fullData.csv', index = False) #saving the necessary data       
 
     if returnValues:
         return subData, colNames[0], namePositionDict, OffRatingDict, DefRatingDict
@@ -108,9 +109,8 @@ data, colNames, namePositionDict, offDict, defDict = createData(True)
 #Reading in the data
 df_raw = pd.read_csv('./fullData.csv', na_filter = [' '])
 
-df_raw = df_raw.drop(['Lg','Rk', 'Season', 'Age', 'Tm'], axis=1) #we will not be using these columns
-df_raw = df_raw.drop(df_raw.columns[0], axis = 1)
-df_raw.describe()
+df_raw = df_raw.drop(['Lg','Rk', 'Season', 'Age', 'Tm','OffRating', 'DefRating'], axis=1) #we will not be using these columns
+df_raw.describe(include = 'all')
 df_raw.shape
 
 #Data Preprocessing
@@ -214,15 +214,6 @@ X_norm = fit.transform(X)
 
 pca = PCA().fit(X_norm)
 
-val = 0
-count = 0
-for i in pca.explained_variance_ratio_:
-    val += i
-    count += 1
-    if val >= 0.95:
-        break
-print('The number of principal components needed to account for 95% of the variation is ', count)
-
 print('The first two Principal Components explain %0.02f percent of the variation'%pca.explained_variance_ratio_[[0,1]].sum())
 
 X_pca_2 = PCA(n_components = 2).fit(X_norm).transform(X_norm)
@@ -230,9 +221,9 @@ X_pca_2 = PCA(n_components = 2).fit(X_norm).transform(X_norm)
 ##Looking at PCA for the position values
 posKV = {} #creating a new variable to color the datapoints properly
 for value, key in enumerate(set(Y_position)): posKV[key] = value
-colors = [posKV[key] for key in Y_position]
+posNumber = [posKV[key] for key in Y_position]
 
-plt.scatter(X_pca_2[:,0], X_pca_2[:,1], c = colors)
+plt.scatter(X_pca_2[:,0], X_pca_2[:,1], c = posNumber)
 plt.xlabel('Principal Component 1'); plt.ylabel('Principal Component 2')
 plt.title('Plot of first 2 PCs and datapoints colored by player position')
 
@@ -275,12 +266,33 @@ from sklearn.cluster import KMeans
 from sklearn.metrics import homogeneity_score, completeness_score
 from sklearn.preprocessing import MinMaxScaler
 
-
 predictions = KMeans(n_clusters=5).fit_predict(MinMaxScaler().fit_transform(X))
 
-homogeneity_score(colors, predictions)
+homogeneity_score(posNumber, predictions)
 
-completeness_score(colors, predictions)
+completeness_score(posNumber, predictions)
+
+
+##based on the pca variable from data exploration:
+
+val = 0
+count = 0
+for i in pca.explained_variance_ratio_:
+    val += i
+    count += 1
+    if val >= 0.95:
+        break
+print('The number of principal components needed to account for 95% of the variation is', count)
+
+##We repeat Kmeans clustering with 12 components and compare the results
+X_pca_12 = PCA(n_components = 12).fit(X_norm).transform(X_norm)
+
+predictions = KMeans(n_clusters=5).fit_predict(MinMaxScaler().fit_transform(X_pca_12))
+
+homogeneity_score(posNumber, predictions)
+
+completeness_score(posNumber, predictions)
+##We get slightly higher scores (but still very similar)
 
 #TASK1: K-NN to predict the position
 from sklearn.neighbors import KNeighborsClassifier
@@ -322,11 +334,10 @@ for i in range(1, 100, 5):
     results = np.append(results, scores.mean())
 
 # Plot percentile of features VS. cross-validation scores
+
 plt.figure()
 plt.xlabel("Percentage of features selected")
 plt.ylabel("Cross validation accuracy")
-
-
 
 #TASK 3: Prediction on the ratings
 
