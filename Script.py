@@ -8,14 +8,15 @@ import os
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
-os.chdir('/Users/Sriram/Desktop/DePaul/Q3/CSC478/CSC478Project')
+os.chdir('C:/Users/syarlag1/Desktop/Exploring-Basket-Ball-Data')
 
 
 def createData(returnValues = False):
     '''reads the data from the folder containing all the data files
     and returns a final nested list with all the data in it if argument
     is set to true. Running this function will automatically generate a file
-    called 'fullData.csv' containing all the datapoints for this file. 
+    called 'fullData.csv' containing all the datapoints for this file and all
+    the targets needed.
     ''' 
     #Reading in the Stats data (X). All the data is by player, so we need to filter it after reading in to get only the data we need
     allData = []
@@ -66,15 +67,12 @@ def createData(returnValues = False):
                 continue
             namePositionDict[terms[1]] = terms[2]
             
-    ##Creating the position Y variable    
     position = []
     for name in df.Player:
         position.append(namePositionDict[name])
     
-    df['Position'] = position
+    df['Position'] = position    
     
-    ##We add the values of the Y-column to the current data and create a pandas dataframe for preprocessing
-    df.to_csv('./fullData.csv') #saving the necessary data    
     #Reading the player offensive and defensive rating data:
     OffRatingDict = {}
     DefRatingDict = {}
@@ -90,6 +88,17 @@ def createData(returnValues = False):
                 OffRatingDict[words[1]].append(words[20])
                 DefRatingDict[words[1]].append(words[21])
     
+    defRating = []; offRating = []
+    for name in df.Player:
+        defRating.append(DefRatingDict[name])
+        offRating.append(OffRatingDict[name])
+
+    df['DefRating'] = defRating
+    df['OffRating'] = offRating    
+    
+    ##We add the values of the Y-column to the current data and create a pandas dataframe for preprocessing
+    df.to_csv('./fullData.csv') #saving the necessary data       
+
     if returnValues:
         return subData, colNames[0], namePositionDict, OffRatingDict, DefRatingDict
     
