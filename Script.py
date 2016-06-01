@@ -187,6 +187,8 @@ def halloffameVar(names = player):
     
 Y_HofF = halloffameVar(names = player)
 
+#####################################################################################################
+
 #Data Exploration
 ##First we perform PCA and find the number of PCs contibute to 95% of the variation
 ##In order to do this, we first center and scale the data
@@ -261,6 +263,8 @@ hr_agg.plot(kind = 'bar'); plt.ylim(ymin=100, ymax=120)#starting at 100 for bett
 plt.ylabel('Mean Rating'); plt.xlabel('Player Hall of Fame Status')
 
 
+#################################################################################################################
+####Unsupervised####
 #TASK 1: CLUSTERING
 from sklearn.cluster import KMeans
 from sklearn.metrics import homogeneity_score, completeness_score
@@ -271,7 +275,6 @@ predictions = KMeans(n_clusters=5).fit_predict(MinMaxScaler().fit_transform(X))
 homogeneity_score(posNumber, predictions)
 
 completeness_score(posNumber, predictions)
-
 
 ##based on the pca variable from data exploration:
 
@@ -293,6 +296,19 @@ homogeneity_score(posNumber, predictions)
 
 completeness_score(posNumber, predictions)
 ##We get slightly higher scores (but still very similar)
+
+#######################################################
+####Supervised####
+##Test-train split
+
+#We split the data into testing and training data (80% and 20%)
+from sklearn.cross_validation import train_test_split
+
+Y_df = pd.DataFrame([list(Y_def),list(Y_off),list(Y_HofF),list(Y_position)], columns=['def','off','HoF','Position'])
+
+X_train, X_test, Y_train, Y_test = train_test_split(X, , 0.33, 99) 
+
+
 
 #TASK1: K-NN to predict the position
 from sklearn.neighbors import KNeighborsClassifier
