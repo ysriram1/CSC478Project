@@ -226,7 +226,6 @@ colors = [posKV[key] for key in Y_position]
 plt.scatter(X_pca_2[:,0], X_pca_2[:,1], c = colors)
 plt.xlabel('Principal Component 1'); plt.ylabel('Principal Component 2')
 plt.title('Plot of first 2 PCs and datapoints colored by player position')
-plt.close()
 
 #Based on the plot above, we can see that there is a variation among th 10classes. The distinction
 #is not perfectly visible but there definitely seems to be differences with the classes. The arrangement
@@ -237,7 +236,6 @@ plt.close()
 plt.scatter(X_pca_2[:,0], X_pca_2[:,1], c = Y_HofF)
 plt.xlabel('Principal Component 1'); plt.ylabel('Principal Component 2')
 plt.title('Plot of first 2 PCs and datapoints colored by Hall of Fame Status')
-plt.close()
 
 #Looking at the plot below, there doesnt seem to be any discernable pattern in the data. 
 #this could also be caused as a result of the fact of that there are very few HofF players
@@ -273,15 +271,55 @@ predictions = KMeans(n_clusters=5).fit_predict(MinMaxScaler().fit_transform(X))
 
 homogeneity_score(colors, predictions)
 
-#TASK2: K-NN to predict the position
+completeness_score(colors, predictions)
 
+#TASK1: K-NN to predict the position
+from sklearn.neighbors import KNeighborsClassifier
+from sklearn.cross_validation import cross_val_score
+from sklearn.metrics import accuracy_score
+from sklearn.lda import LDA
 
+X_01 = MinMaxScaler().fit_transform(X)
+
+KnnFit = KNeighborsClassifier(n_neighbors = 5).fit(X_01,Y_position)#with euclidean distance
+predictions = KnnFit.predict(X)
+
+accuracy_score(predictions, Y_position)#on the training dataset
+
+cross_val_score(KnnFit, X_01, Y_position, cv=10)#in the 60s
+
+###Trying the same using LDA and Classification Trees
+
+ldaFit = LDA().fit(X_01, Y_position)
+
+cross_val_score(ldaFit, X_01, Y_position, cv=10)#slightly better results
 
 #TASK 2: LDA on HofF
+from sklearn.lda import LDA
+from sklearn import feature_selection
+ldaFit = LDA().fit(X_01, Y_HofF)
+
+cross_val_score(ldaFit, X_01, Y_HofF, cv=10)#getting really high values
+
+##Running Feature Selection on LDA
+percentiles = range(1, 100, 5)
+results = []
+
+for i in range(1, 100, 5):
+    fs = feature_selection.SelectPercentile(feature_selection.chi2, percentile=i)
+    X_fs = fs.fit_transform(X_01, Y_HofF)
+    scores = cross_val_score(ldaFit, X_fs, Y_HofF, cv=10)
+    print(i,scores.mean(), X_fs.shape, X_fs)
+    results = np.append(results, scores.mean())
+
+# Plot percentile of features VS. cross-validation scores
+plt.figure()
+plt.xlabel("Percentage of features selected")
+plt.ylabel("Cross validation accuracy")
+
 
 
 #TASK 3: Prediction on the ratings
-
 
 
 
