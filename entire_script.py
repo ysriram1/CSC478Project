@@ -295,6 +295,8 @@ completeness_score(posNumber, predictions)##We get slightly higher scores (but s
 
 
 from sklearn.metrics import accuracy_score, classification_report,confusion_matrix, recall_score
+from sklearn import feature_selection
+
 
 #function to measure the accuracy of a classification
 def measure_performance(X, y, clf, show_accuracy=True, show_classification_report=True, show_confussion_matrix=True, show_recall = True):
@@ -314,7 +316,7 @@ def measure_performance(X, y, clf, show_accuracy=True, show_classification_repor
         print("Accuracy:{0:.3f}".format(recall_score(y, y_pred, pos_label=1, average = 'binary')),"\n")
 
 
-from sklearn.cross_validation import KFold
+from sklearn.cross_validation import KFold, cross_val_score
 
 #Function to measure the accuracy based on different parameters
 def calc_params(X, y, clf, param_values, param_name, K, metric = 'accuracy'):
@@ -350,8 +352,8 @@ def calc_params(X, y, clf, param_values, param_name, K, metric = 'accuracy'):
                 k_train_scores[j] = clf.score([X[k] for k in train], y[train])
                 k_test_scores[j] = clf.score([X[k] for k in test], y[test])
             elif metric == 'recall':
-                k_train_scores[j] = [recall_score(clf.predict(X[k] for k in train),y[train], pos_label=1, average = 'binary']
-                k_test_scores[j] = [recall_score(clf.predict(X[k] for k in test),y[test], pos_label=1, average = 'binary']
+                k_train_scores[j] = recall_score(clf.predict(X[k] for k in train),y[train], pos_label=1, average = 'binary')
+                k_test_scores[j] = recall_score(clf.predict([X[k] for k in test]),y[test], pos_label=1, average = 'binary')
           
         # store the mean of the K fold scores
         train_scores[i] = np.mean(k_train_scores)
@@ -377,28 +379,15 @@ X_train, X_test, Y_train, Y_test = train_test_split(X,Y_position, test_size=0.33
 
 ###Since the position variable is well balanced, we test out different approaches: KNN, LDA, Classification Trees
 ###Our main metric for performance is the accuracy
-
-#K-NN:
 from sklearn.neighbors import KNeighborsClassifier
-from sklearn.cross_validation import cross_val_score
 from sklearn.lda import LDA
-from sklearn import feature_selection
+from sklearn.tree import DecisionTreeClassifier
 
+X_train_01 = MinMaxScaler().fit_transform(X_train) #scaling to a 0,1 scale
 
-X_01 = MinMaxScaler().fit_transform(X)
-
-KnnFit = KNeighborsClassifier(n_neighbors = 5).fit(X_01,Y_position)#with euclidean distance
-predictions = KnnFit.predict(X)
-
-accuracy_score(predictions, Y_position)#on the training dataset
-
-cross_val_score(KnnFit, X_01, Y_position, cv=10)#in the 60s
-
-#LDA
-
-ldaFit = LDA().fit(X_01, Y_position)
-
-cross_val_score(ldaFit, X_01, Y_position, cv=10)#slightly better results
+knnFit = KNeighborsClassifier(n_neighbors = 5).fit(X_train_01,Y_position)#with euclidean distanceK
+ldaFit = LDA().fit(X_train_01, Y_position)
+treeFit = DecisionTreeClassifier().fit()
 
 #Classification Trees
 
