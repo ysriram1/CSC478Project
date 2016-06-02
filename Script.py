@@ -195,16 +195,20 @@ Y_HofF = halloffameVar(names = player)
 
 #Taking at a look at the distribution of the Postion Variable
 
-pd.DataFrame(Y_position).groupby('Position')['Position'].count().plot(kind = 'bar'); plt.close() #relatively evenly spread
+pd.DataFrame(Y_position).groupby('Position')['Position'].count().plot(kind = 'bar') #relatively evenly spread
+plt.ylabel('Count')
 
 #Taking at a look at the distribution of the HofF Variable
 
-pd.DataFrame(Y_HofF, columns = ['HoF']).groupby('HoF')['HoF'].count().plot(kind = 'bar'); plt.close() #far more non-HoF players
+pd.DataFrame(Y_HofF, columns = ['HoF']).groupby('HoF')['HoF'].count().plot(kind = 'bar') #far more non-HoF players
+plt.ylabel('Count')
+
+
 
 #Taking a look at the distribution of the Def and Off Ratings
-pd.DataFrame(Y_def).plot(kind = 'hist'); plt.close()#Defensive Rating
+pd.DataFrame(Y_def).plot(kind = 'hist'); plt.ylabel('Count'); plt.xlabel('Defensive Rating')#Defensive Rating
 
-pd.DataFrame(Y_off).plot(kind = 'hist'); plt.close()#Offensive Rating
+pd.DataFrame(Y_off).plot(kind = 'hist'); plt.ylabel('Count'); plt.xlabel('Offensive Rating')#Offensive Rating
 
 
 
@@ -234,26 +238,16 @@ plt.title('Plot of first 2 PCs and datapoints colored by player position')
 #doesnot look random. The legend has been left out on purpose. It serves no purpose in aiding the point that 
 #point that is being coveryed here.
 
-##Looking at PCA for the Hall of Fame values
-plt.scatter(X_pca_2[:,0], X_pca_2[:,1], c = Y_HofF)
-plt.xlabel('Principal Component 1'); plt.ylabel('Principal Component 2')
-plt.title('Plot of first 2 PCs and datapoints colored by Hall of Fame Status')
-
-#Looking at the plot below, there doesnt seem to be any discernable pattern in the data. 
-#this could also be caused as a result of the fact of that there are very few HofF players
-#only 54 out of 1478. Since this is the case, we also try to classify using LDA (lineat dis-
-#criminant analysis)
-
 ##Looking at the variation between defensive Rating and offensive Rating by the player position
 pos_rating = pd.DataFrame(Y_position); pos_rating['Def'] = Y_def; pos_rating['Off'] = Y_off
 pr_agg = pd.DataFrame(); pr_agg['Def'] = pos_rating.groupby('Position')['Def'].mean()
 pr_agg['Off'] = pos_rating.groupby('Position')['Off'].mean()
 #looking at the Defensive score
 pr_agg.drop(['Off'], axis=1).plot(kind = 'bar'); plt.ylim(ymin=100, ymax=110)#starting at 100 for better comparison
-plt.ylabel('Mean Rating'); plt.xlabel('Player Position')
+plt.ylabel('Mean Defensive Rating'); plt.xlabel('Player Position')
 #looking at the Offensive score
 pr_agg.drop(['Def'], axis=1).plot(kind = 'bar'); plt.ylim(ymin=100, ymax=105)#starting at 100 for better comparison
-plt.ylabel('Mean Rating'); plt.xlabel('Player Position')
+plt.ylabel('Mean Offensive Rating'); plt.xlabel('Player Position')
 
 ##Looking at the mean ratings for HoF players vs the rest
 hof_rating = pd.DataFrame(Y_HofF, columns = ['HallofFame']); hof_rating['Def'] = Y_def; hof_rating['Off'] = Y_off
@@ -265,7 +259,7 @@ plt.ylabel('Mean Rating'); plt.xlabel('Player Hall of Fame Status')
 
 #################################################################################################################
 ####Unsupervised####
-#TASK 1: CLUSTERING
+#TASK 2: CLUSTERING
 from sklearn.cluster import KMeans
 from sklearn.metrics import homogeneity_score, completeness_score
 from sklearn.preprocessing import MinMaxScaler
@@ -299,22 +293,24 @@ completeness_score(posNumber, predictions)
 
 #######################################################
 ####Supervised####
-##Test-train split
 
-#We split the data into testing and training data (80% and 20%)
+#TASK 2: The Position Variable
+##Test-train split
+#We split the data into testing and training data (67% and 33%)
 from sklearn.cross_validation import train_test_split
 
-Y_df = pd.DataFrame([list(Y_def),list(Y_off),list(Y_HofF),list(Y_position)], columns=['def','off','HoF','Position'])
+X_train, X_test, Y_train, Y_test = train_test_split(X,Y_position, test_size=0.33, random_state=99) 
 
-X_train, X_test, Y_train, Y_test = train_test_split(X, , 0.33, 99) 
+###Since the position variable is well balanced, we test out different approaches: KNN, LDA, Classification Trees
+###Our main metric for performance is the accuracy
 
-
-
-#TASK1: K-NN to predict the position
+#K-NN:
 from sklearn.neighbors import KNeighborsClassifier
 from sklearn.cross_validation import cross_val_score
 from sklearn.metrics import accuracy_score
 from sklearn.lda import LDA
+from sklearn import feature_selection
+
 
 X_01 = MinMaxScaler().fit_transform(X)
 
@@ -325,20 +321,19 @@ accuracy_score(predictions, Y_position)#on the training dataset
 
 cross_val_score(KnnFit, X_01, Y_position, cv=10)#in the 60s
 
-###Trying the same using LDA and Classification Trees
+#LDA
 
 ldaFit = LDA().fit(X_01, Y_position)
 
 cross_val_score(ldaFit, X_01, Y_position, cv=10)#slightly better results
 
-#TASK 2: LDA on HofF
-from sklearn.lda import LDA
-from sklearn import feature_selection
-ldaFit = LDA().fit(X_01, Y_HofF)
+#Classification Trees
 
-cross_val_score(ldaFit, X_01, Y_HofF, cv=10)#getting really high values
 
-##Running Feature Selection on LDA
+
+
+
+##Running Feature Selection on best model
 percentiles = range(1, 100, 5)
 results = []
 
@@ -355,7 +350,19 @@ plt.figure()
 plt.xlabel("Percentage of features selected")
 plt.ylabel("Cross validation accuracy")
 
-#TASK 3: Prediction on the ratings
+
+#TASK 3: The HofF variable
+
+###Since the HofF variable is very unbalanced, we stick to ensemble based approaches AdaBoost, Random Forest
+###Our main metric for performance is the senstivity NOT accuracy
+
+from sklearn.lda import LDA
+ldaFit = LDA().fit(X_01, Y_HofF)
+
+cross_val_score(ldaFit, X_01, Y_HofF, cv=10)#getting really high values
+
+
+#TASK 4: Prediction on Defensive and Offensive Ratings
 
 
 
