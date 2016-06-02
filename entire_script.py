@@ -386,7 +386,9 @@ from sklearn.neighbors import KNeighborsClassifier
 from sklearn.lda import LDA
 from sklearn.tree import DecisionTreeClassifier
 
-X_train_01 = MinMaxScaler().fit_transform(X_train) #scaling to a 0,1 scale
+scale01 = MinMaxScaler().fit(X_train)
+X_train_01 = scale01.transform(X_train) #scaling to a 0,1 scale
+X_test_01 = scale01.transform(X_test)
 
 #Tree
 treeMeasures = ['gini', 'entropy']
@@ -412,7 +414,75 @@ pd.DataFrame(np.array([test_scores, nns]).T, columns = ['Test Accuracy', 'Number
 
 #LDA
 #Since we dont have many parameters to vary for LDA, we run it as is to see the results: 
-ldaFit = LDA().fit(X_train_01, Y_train)
+folds = KFold(n = X_train_01.shape[0], n_folds = 10); ldaAccuracyScores = []
+for train_fold, test_fold in folds:
+    ldaFit = LDA().fit(X_train_01[train_fold], Y_train[train_fold])
+    accuracy = accuracy_score(Y_train[test_fold], ldaFit.predict(X_train_01[test_fold]))
+    ldaAccuracyScores.append(accuracy)
+ldaAccuracyScores = np.array(ldaAccuracyScores)
+
+print('the mean accuracy through LDA on training data is %0.2f'%ldaAccuracyScores.mean())
+
+
+
+#TASK 3: The HofF variable
+###Since the HofF variable is very unbalanced, we stick to ensemble based approaches AdaBoost, Random Forest
+###Our main metric for performance is the senstivity NOT accuracy
+#Stratified Test-train split
+from sklearn.cross_validation import StratifiedShuffleSplit
+
+splits = StratifiedShuffleSplit(Y_HofF, n_iter=1, test_size=0.33, random_state=99)
+
+for train_split, test_split in splits:
+    X_train = X[train_split]; X_test  = X[test_split]
+    Y_train = Y_HofF[train_split]; Y_test = Y_HofF[test_split]    
+
+
+#Random Forest
+from sklearn.ensemble import RandomForestClassifier
+
+rd = RandomForestClassifier().fit()
+
+
+
+
+
+
+
+
+
+
+
+#AdaBoost
+
+
+
+
+
+
+
+
+
+
+
+
+
+#TASK 4: Prediction on Defensive and Offensive Ratings
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
@@ -425,7 +495,7 @@ results = []
 
 for i in range(1, 100, 5):
     fs = feature_selection.SelectPercentile(feature_selection.chi2, percentile=i)
-    X_fs = fs.fit_transform(X_01, Y_HofF)
+    X_fs = fs.fit_transform(X_train_01, Y_HofF)
     scores = cross_val_score(ldaFit, X_fs, Y_HofF, cv=10)
     print(i,scores.mean(), X_fs.shape, X_fs)
     results = np.append(results, scores.mean())
@@ -435,20 +505,5 @@ for i in range(1, 100, 5):
 plt.figure()
 plt.xlabel("Percentage of features selected")
 plt.ylabel("Cross validation accuracy")
-
-
-#TASK 3: The HofF variable
-
-###Since the HofF variable is very unbalanced, we stick to ensemble based approaches AdaBoost, Random Forest
-###Our main metric for performance is the senstivity NOT accuracy
-
-from sklearn.lda import LDA
-ldaFit = LDA().fit(X_01, Y_HofF)
-
-cross_val_score(ldaFit, X_01, Y_HofF, cv=10)#getting really high values
-
-
-#TASK 4: Prediction on Defensive and Offensive Ratings
-
 
 
