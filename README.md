@@ -1,2 +1,1 @@
-# CSC478Project
-Code and Data Files for 478 project go here
+# Exploring Basket Ball Data using python
