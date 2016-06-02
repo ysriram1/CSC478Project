@@ -331,7 +331,7 @@ def calc_params(X, y, clf, param_values, param_name, K, metric = 'accuracy'):
     
     # iterate over the different parameter values
     for i, param_value in enumerate(param_values):
-        print(param_name, ' = ', param_value)
+        #print(param_name, ' = ', param_value)
         
         # set classifier parameters
         clf.set_params(**{param_name:param_value})
@@ -360,11 +360,14 @@ def calc_params(X, y, clf, param_values, param_name, K, metric = 'accuracy'):
         test_scores[i] = np.mean(k_test_scores)
        
     # plot the training and testing scores in a log scale
+    plt.close()
+    plt.figure()
     plt.plot(param_values, train_scores, label='Train', alpha=0.4, lw=2, c='b')
-    plt.plot(param_values, test_scores, label='X-Val', alpha=0.4, lw=2, c='g')
+    plt.plot(param_values, test_scores, label='Test', alpha=0.4, lw=2, c='g')
     plt.legend(loc=7)
     plt.xlabel(param_name + " values")
     plt.ylabel("Mean cross validation accuracy")
+    plt.show()
 
     # return the training and testing scores on each parameter value
     return train_scores, test_scores
@@ -385,11 +388,32 @@ from sklearn.tree import DecisionTreeClassifier
 
 X_train_01 = MinMaxScaler().fit_transform(X_train) #scaling to a 0,1 scale
 
-knnFit = KNeighborsClassifier(n_neighbors = 5).fit(X_train_01,Y_position)#with euclidean distanceK
-ldaFit = LDA().fit(X_train_01, Y_position)
-treeFit = DecisionTreeClassifier().fit()
+#Tree
+treeMeasures = ['gini', 'entropy']
+splitSizes = list(range(1,51,4))
+train_scores = {}; test_scores = {}
+for measure in treeMeasures:
+    treeFit = DecisionTreeClassifier(measure).fit(X_train_01, Y_train)
+    print('\n\nResults with splitting criterion as %s and varying minimum sample in leaf:'%measure)
+    train_scores[measure], test_scores[measure] = calc_params(X_train_01, Y_train, treeFit, splitSizes, 'min_samples_leaf', 5)
 
-#Classification Trees
+pd.DataFrame(np.array([test_scores['gini'], test_scores['entropy'], splitSizes]).T, columns = ['Gini','Entropy','Min. Split Size'])
+##Based on the graph and the results we stored, it appears that using 'entropy' with with min split of 45
+
+#Knn
+knnFit = KNeighborsClassifier().fit(X_train_01,Y_train)
+nns = list(range(1,12,2))
+
+print('\n\nResult of Knn with varying number of neighbours')
+train_scores, test_scores = calc_params(X_train, Y_train, knnFit, nns, 'n_neighbors', 5)
+
+pd.DataFrame(np.array([test_scores, nns]).T, columns = ['Test Accuracy', 'Number of Nearest Neighbours'])
+##Very low accuray in the results. best is 1 neighbour 
+
+#LDA
+#Since we dont have many parameters to vary for LDA, we run it as is to see the results: 
+ldaFit = LDA().fit(X_train_01, Y_train)
+
 
 
 
