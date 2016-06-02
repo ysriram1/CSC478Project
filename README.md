@@ -1,1 +1,3 @@
-# Exploring Basket Ball Data using python
+# Exploring Basket Ball Data
+
+#### We use python for the analysis
