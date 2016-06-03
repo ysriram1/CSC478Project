@@ -520,8 +520,10 @@ gs.best_params_, gs.best_score_
 fit = ElasticNet(alpha=0,l1_ratio=0).fit(X_train_01, Y_train)
 mean_absolute_error(Y_test, fit.predict(X_test_01)) #MAE on testing data is 1.63
 
-pd.DataFrame([df_raw.columns[1:-1].T,fit.coef_.T], columns=['Feature Name','Coefficient'])
-
+###Table with the features and the coefficents
+results = [list(df_raw.columns[1:-1].values.T), list(fit.coef_)]
+df_results = pd.DataFrame(results).T; df_results.columns = ['Feature Name','Coefficient']
+df_results
 
 ###Let us plot the true vs predicted values to visualize this result
 plt.scatter(Y_test, fit.predict(X_test_01))
@@ -561,9 +563,11 @@ gs.best_params_, gs.best_score_
 fit = ElasticNet(alpha=0,l1_ratio=0).fit(X_train_01, Y_train)
 mean_absolute_error(Y_test, fit.predict(X_test_01)) #MAE on Testing data is 3.1
 
-results = [list(df_raw.columns[1:-1].values.T),list(fit.coef_)]
-pd.DataFrame(results)
-pd.DataFrame([df_raw.columns[1:-1].values.T,fit.coef_.T], columns=['Feature Name','Coefficient'])
+
+###Table with the features and the coefficents
+results = [list(df_raw.columns[1:-1].values.T), list(fit.coef_)]
+df_results = pd.DataFrame(results).T; df_results.columns = ['Feature Name','Coefficient']
+df_results
 
 
 ###Let us plot the true vs predicted values to visualize this result
