@@ -8,7 +8,7 @@ import os
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
-os.chdir('C:/Users/syarlag1/Desktop/Exploring-Basket-Ball-Data')
+os.chdir('/Users/Sriram/Desktop/DePaul/Q3/CSC478/Exploring-Basket-Ball-Data')
 
 
 def createData(returnValues = False):
@@ -298,29 +298,16 @@ from sklearn.metrics import accuracy_score, classification_report,confusion_matr
 from sklearn import feature_selection
 
 
-#function to measure the accuracy of a classification
-def measure_performance(X, y, clf, show_accuracy=True, show_classification_report=True, show_confussion_matrix=True, show_recall = True):
-    y_pred = clf.predict(X)   
-    if show_accuracy:
-         print("Accuracy:{0:.3f}".format(accuracy_score(y, y_pred)),"\n")
-    if show_classification_report:
-        print( "Classification report")
-        print(classification_report(y, y_pred),"\n")
-      
-    if show_confussion_matrix:
-        print("Confussion matrix")
-        print(confusion_matrix(y, y_pred),"\n")
-    
-    if show_recall:
-        print("Recall on Hall of Fame == Yes variable")
-        print("Accuracy:{0:.3f}".format(recall_score(y, y_pred, pos_label=1, average = 'binary')),"\n")
-
-
-from sklearn.cross_validation import KFold, cross_val_score
-
+#The following function calculates and plots the accuracy/recall values of a given classifier accross a specified set of parameter values
+from sklearn.cross_validation import KFold, cross_val_score,  StratifiedKFold
 #Function to measure the accuracy based on different parameters
 def calc_params(X, y, clf, param_values, param_name, K, metric = 'accuracy'):
-    
+    '''This function takes the classfier, the training data and labels, the name of the
+    parameter to vary, a list of values to vary by, and a number of folds needed for 
+    cross validation and returns a the test and train scores (accuracy or recall) and also
+    prints out a graph that shows the variation of the these scores accross different 
+    pararmeter values.
+    '''
     # Convert input to Numpy arrays
     X = np.array(X)
     y = np.array(y)
@@ -340,8 +327,12 @@ def calc_params(X, y, clf, param_values, param_name, K, metric = 'accuracy'):
         k_train_scores = np.zeros(K)
         k_test_scores = np.zeros(K)
         
-        # create KFold cross validation
-        cv = KFold(len(X), K, shuffle=True, random_state=99)
+        # create KFold cross validation or stratified bootstrap validation
+        if metric == 'accuracy':
+            cv = KFold(len(X), K, shuffle=True, random_state=99)
+        
+        if metric == 'recall':
+            cv = StratifiedKFold(y, n_folds = K, shuffle=True, random_state=99)
         
         # iterate over the K folds
         for j, (train, test) in enumerate(cv):
@@ -352,12 +343,17 @@ def calc_params(X, y, clf, param_values, param_name, K, metric = 'accuracy'):
                 k_train_scores[j] = clf.score([X[k] for k in train], y[train])
                 k_test_scores[j] = clf.score([X[k] for k in test], y[test])
             elif metric == 'recall':
-                k_train_scores[j] = recall_score(clf.predict(X[k] for k in train),y[train], pos_label=1, average = 'binary')
-                k_test_scores[j] = recall_score(clf.predict([X[k] for k in test]),y[test], pos_label=1, average = 'binary')
-          
-        # store the mean of the K fold scores
-        train_scores[i] = np.mean(k_train_scores)
-        test_scores[i] = np.mean(k_test_scores)
+                fit = clf.fit(X[train],y[train])
+                k_train_scores[j] = recall_score(fit.predict(X[train]),y[train], pos_label=1, average = 'binary')
+                k_test_scores[j] = recall_score(fit.predict(X[test]),y[test], pos_label=1, average = 'binary')
+       
+       # store the mean of the K fold scores
+        if metric == 'accuracy':
+            train_scores[i] = np.mean(k_train_scores)
+            test_scores[i] = np.mean(k_test_scores)
+        if metric == 'recall':
+            train_scores[i] = np.mean(k_train_scores)
+            test_scores[i] = np.mean(k_test_scores)
        
     # plot the training and testing scores in a log scale
     plt.close()
@@ -366,7 +362,8 @@ def calc_params(X, y, clf, param_values, param_name, K, metric = 'accuracy'):
     plt.plot(param_values, test_scores, label='Test', alpha=0.4, lw=2, c='g')
     plt.legend(loc=7)
     plt.xlabel(param_name + " values")
-    plt.ylabel("Mean cross validation accuracy")
+    if metric == 'accuracy': plt.ylabel("Mean cross validation accuracy")
+    if metric == 'recall': plt.ylabel("Mean cross validation recall (Senstivity) for label 1")
     plt.show()
 
     # return the training and testing scores on each parameter value
@@ -401,6 +398,8 @@ for measure in treeMeasures:
 
 pd.DataFrame(np.array([test_scores['gini'], test_scores['entropy'], splitSizes]).T, columns = ['Gini','Entropy','Min. Split Size'])
 ##Based on the graph and the results we stored, it appears that using 'entropy' with with min split of 45
+###Measuring accuracy on testing data with best fit
+accuracy_score(Y_test, treeFit.predict(X_test_01)) #61%
 
 #Knn
 knnFit = KNeighborsClassifier().fit(X_train_01,Y_train)
@@ -411,6 +410,8 @@ train_scores, test_scores = calc_params(X_train, Y_train, knnFit, nns, 'n_neighb
 
 pd.DataFrame(np.array([test_scores, nns]).T, columns = ['Test Accuracy', 'Number of Nearest Neighbours'])
 ##Very low accuray in the results. best is 1 neighbour 
+###Training Accuracy
+accuracy_score(Y_test, knnFit.predict(X_test_01)) #worse then guessing
 
 #LDA
 #Since we dont have many parameters to vary for LDA, we run it as is to see the results: 
@@ -420,10 +421,10 @@ for train_fold, test_fold in folds:
     accuracy = accuracy_score(Y_train[test_fold], ldaFit.predict(X_train_01[test_fold]))
     ldaAccuracyScores.append(accuracy)
 ldaAccuracyScores = np.array(ldaAccuracyScores)
-
 print('the mean accuracy through LDA on training data is %0.2f'%ldaAccuracyScores.mean())
 
-
+ldaFit = LDA().fit(X_train_01, Y_train)
+accuracy_score(Y_test, ldaFit.predict(X_test_01)) #highest accuracy of 63%
 
 #TASK 3: The HofF variable
 ###Since the HofF variable is very unbalanced, we stick to ensemble based approaches AdaBoost, Random Forest
@@ -435,40 +436,56 @@ splits = StratifiedShuffleSplit(Y_HofF, n_iter=1, test_size=0.33, random_state=9
 
 for train_split, test_split in splits:
     X_train = X[train_split]; X_test  = X[test_split]
-    Y_train = Y_HofF[train_split]; Y_test = Y_HofF[test_split]    
+    Y_train = Y_HofF[train_split]; Y_test = Y_HofF[test_split] 
+    
+##0-1 minmax normalization
+scale01 = MinMaxScaler().fit(X_train)
+X_train_01 = scale01.transform(X_train) #scaling to a 0,1 scale
+X_test_01 = scale01.transform(X_test)
+   
+##We now perform analysis using random forests and adaboost using stratified cross validation
 
 
 #Random Forest
 from sklearn.ensemble import RandomForestClassifier
 
-rd = RandomForestClassifier().fit()
+rf = RandomForestClassifier().fit(X_train_01, Y_train)
 
+#We vary the min split sizes
+splitSizes = list(range(1,10,1))
+train_scores, test_scores = calc_params(X_train_01, Y_train, rf, splitSizes, 'min_samples_leaf', 5, metric = 'recall')
+pd.DataFrame(np.array([test_scores, splitSizes]).T, columns = ['Test Recall', 'Minimum Split Size'])
 
+#We also vary the number of estimators
+nEst = range(5, 101, 5)
+train_scores, test_scores = calc_params(X_train_01, Y_train, rf, nEst, 'n_estimators', 5, metric = 'recall')
+pd.DataFrame(np.array([test_scores, nEst]).T, columns = ['Test Recall', 'Number of Estimators'])
 
-
-
-
-
-
-
-
+##Based on the graphs and outputs, minimum split size of 4 with split size of 60 gives the best results
+##We find the recall on the test data using these parameters
+rf = RandomForestClassifier(n_estimators = 60,min_samples_leaf = 4).fit(X_train_01, Y_train)
+recall_score(rf.predict(X_test_01), Y_test) #We get 41.67%
+##We still get a relatively low recall of 0.278
 
 #AdaBoost
 
+from sklearn.ensemble import AdaBoostClassifier
 
+ad = AdaBoostClassifier().fit(X_train_01, Y_train)
 
+##We vary the number of estimators and measure the accuracy
+nEst = range(5, 101, 5)
+train_scores, test_scores = calc_params(X_train_01, Y_train, ad, nEst, 'n_estimators', 5, metric = 'recall')
+pd.DataFrame(np.array([test_scores, nEst]).T, columns = ['Test Recall', 'Number of Estimators'])
 
+##From the graph and table we see that there are much better results than before
+##Highest recall is with 10 estimators, we use that to predict on the testing data
 
-
-
-
-
-
-
-
+ad = AdaBoostClassifier(n_estimators = 65).fit(X_train_01, Y_train)
+recall_score(ad.predict(X_test_01), Y_test) #We get 41.67%
 
 #TASK 4: Prediction on Defensive and Offensive Ratings
-
+###
 
 
 
