@@ -449,7 +449,7 @@ X_test_01 = scale01.transform(X_test)
 #Random Forest
 from sklearn.ensemble import RandomForestClassifier
 
-rf = RandomForestClassifier().fit(X_train_01, Y_train)
+rf = RandomForestClassifier(random_state=99).fit(X_train_01, Y_train)
 
 #We vary the min split sizes
 splitSizes = list(range(1,10,1))
@@ -463,15 +463,16 @@ pd.DataFrame(np.array([test_scores, nEst]).T, columns = ['Test Recall', 'Number 
 
 ##Based on the graphs and outputs, minimum split size of 4 with split size of 60 gives the best results
 ##We find the recall on the test data using these parameters
-rf = RandomForestClassifier(n_estimators = 60,min_samples_leaf = 4).fit(X_train_01, Y_train)
-recall_score(rf.predict(X_test_01), Y_test) #We get 41.67%
-##We still get a relatively low recall of 0.278
+rf = RandomForestClassifier(n_estimators = 60,min_samples_leaf = 4, random_state=99).fit(X_train_01, Y_train)
+recall_score(rf.predict(X_test_01), Y_test) #We get 80%
+confusion_matrix(rf.predict(X_test_01), Y_test)
+##We still get a relatively high recall of 80%
 
 #AdaBoost
 
 from sklearn.ensemble import AdaBoostClassifier
 
-ad = AdaBoostClassifier().fit(X_train_01, Y_train)
+ad = AdaBoostClassifier(random_state=99).fit(X_train_01, Y_train)
 
 ##We vary the number of estimators and measure the accuracy
 nEst = range(5, 101, 5)
@@ -481,7 +482,7 @@ pd.DataFrame(np.array([test_scores, nEst]).T, columns = ['Test Recall', 'Number 
 ##From the graph and table we see that there are much better results than before
 ##Highest recall is with 10 estimators, we use that to predict on the testing data
 
-ad = AdaBoostClassifier(n_estimators = 65).fit(X_train_01, Y_train)
+ad = AdaBoostClassifier(n_estimators = 65, random_state=99).fit(X_train_01, Y_train)
 recall_score(ad.predict(X_test_01), Y_test) #We get 41.67%
 
 #TASK 4: Prediction on Defensive and Offensive Ratings
