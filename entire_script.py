@@ -4,12 +4,13 @@ Created on Thu May 26 13:19:51 2016
 
 @author: SYARLAG1
 """
+import warnings
 import os
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
-os.chdir('/Users/Sriram/Desktop/DePaul/Q3/CSC478/Exploring-Basket-Ball-Data')
-
+os.chdir('C:/Users/syarlag1/Desktop/Exploring-Basket-Ball-Data')
+warnings.filterwarnings('ignore')
 
 def createData(returnValues = False):
     '''reads the data from the folder containing all the data files
@@ -294,7 +295,7 @@ completeness_score(posNumber, predictions)##We get slightly higher scores (but s
 ####Supervised####
 
 
-from sklearn.metrics import accuracy_score, classification_report,confusion_matrix, recall_score
+from sklearn.metrics import accuracy_score, confusion_matrix, recall_score
 from sklearn import feature_selection
 
 
@@ -411,7 +412,7 @@ train_scores, test_scores = calc_params(X_train, Y_train, knnFit, nns, 'n_neighb
 pd.DataFrame(np.array([test_scores, nns]).T, columns = ['Test Accuracy', 'Number of Nearest Neighbours'])
 ##Very low accuray in the results. best is 1 neighbour 
 ###Training Accuracy
-accuracy_score(Y_test, knnFit.predict(X_test_01)) #worse then guessing
+accuracy_score(Y_test, knnFit.predict(X_test_01)) #worse then guessing, 18.16%
 
 #LDA
 #Since we dont have many parameters to vary for LDA, we run it as is to see the results: 
@@ -424,7 +425,7 @@ ldaAccuracyScores = np.array(ldaAccuracyScores)
 print('the mean accuracy through LDA on training data is %0.2f'%ldaAccuracyScores.mean())
 
 ldaFit = LDA().fit(X_train_01, Y_train)
-accuracy_score(Y_test, ldaFit.predict(X_test_01)) #highest accuracy of 63%
+accuracy_score(Y_test, ldaFit.predict(X_test_01)) #highest accuracy of 63.67%; best accuracy
 
 #TASK 3: The HofF variable
 ###Since the HofF variable is very unbalanced, we stick to ensemble based approaches AdaBoost, Random Forest
@@ -445,7 +446,6 @@ X_test_01 = scale01.transform(X_test)
    
 ##We now perform analysis using random forests and adaboost using stratified cross validation
 
-
 #Random Forest
 from sklearn.ensemble import RandomForestClassifier
 
@@ -463,10 +463,10 @@ pd.DataFrame(np.array([test_scores, nEst]).T, columns = ['Test Recall', 'Number 
 
 ##Based on the graphs and outputs, minimum split size of 4 with split size of 60 gives the best results
 ##We find the recall on the test data using these parameters
-rf = RandomForestClassifier(n_estimators = 60,min_samples_leaf = 4, random_state=99).fit(X_train_01, Y_train)
-recall_score(rf.predict(X_test_01), Y_test) #We get 80%
+rf = RandomForestClassifier(n_estimators = 5,min_samples_leaf = 2, random_state=99).fit(X_train_01, Y_train)
+recall_score(rf.predict(X_test_01), Y_test) #We get 57%
 confusion_matrix(rf.predict(X_test_01), Y_test)
-##We still get a relatively high recall of 80%
+
 
 #AdaBoost
 
@@ -483,10 +483,95 @@ pd.DataFrame(np.array([test_scores, nEst]).T, columns = ['Test Recall', 'Number 
 ##Highest recall is with 10 estimators, we use that to predict on the testing data
 
 ad = AdaBoostClassifier(n_estimators = 65, random_state=99).fit(X_train_01, Y_train)
-recall_score(ad.predict(X_test_01), Y_test) #We get 41.67%
+recall_score(ad.predict(X_test_01), Y_test) #We get 66.67%
 
 #TASK 4: Prediction on Defensive and Offensive Ratings
-###
+##Our performance metric is Mean Absolute Error (MAE)
+
+###Def Rating
+
+##Spliting the data into train and test (67% train)
+X_train, X_test, Y_train, Y_test = train_test_split(X,Y_def, test_size=0.33, random_state=99)
+
+##0-1 normalization on the data (the Y variable doesnt need to be transformed)
+scale01 = MinMaxScaler().fit(X_train)
+X_train_01 = scale01.transform(X_train) #scaling to a 0,1 scale
+X_test_01 = scale01.transform(X_test)
+
+##We will employ gridsearch for this part and use the elastic grid parameter
+from sklearn.grid_search import GridSearchCV
+from sklearn.linear_model import ElasticNet
+from sklearn.metrics import mean_absolute_error
+
+fit = ElasticNet()
+
+params = {
+    'l1_ratio': np.linspace(0,1,15), #15 different ratios between 0 and 1. 0 is Ridge, 1 is Lasso
+    'alpha': np.linspace(0,10,num=150) #150 different alpha values, alpha of 0 is non-regularized regression
+}
+
+gs = GridSearchCV(fit, param_grid=params, verbose = True, cv = 10, scoring = 'mean_absolute_error') #We apply CV 5 times
+
+gs.fit(X_train_01, Y_train) #MAE of -1.635
+gs.best_params_, gs.best_score_
+
+##Best criteria is alpha: 0 with l1_ratio: 0, which means just regression with NO regularization
+##We use these values to to test on the testing data
+fit = ElasticNet(alpha=0,l1_ratio=0).fit(X_train_01, Y_train)
+mean_absolute_error(Y_test, fit.predict(X_test_01)) #MAE on testing data is 1.63
+
+pd.DataFrame([df_raw.columns[1:-1].T,fit.coef_.T], columns=['Feature Name','Coefficient'])
+
+
+###Let us plot the true vs predicted values to visualize this result
+plt.scatter(Y_test, fit.predict(X_test_01))
+plt.xlabel('Actual Defensive Rating'); plt.ylabel('Predicted Defensive Rating')
+
+
+
+###Off Rating
+
+##Spliting the data into train and test (67% train)
+X_train, X_test, Y_train, Y_test = train_test_split(X,Y_off, test_size=0.33, random_state=99)
+
+##0-1 normalization on the data (the Y variable doesnt need to be transformed)
+scale01 = MinMaxScaler().fit(X_train)
+X_train_01 = scale01.transform(X_train) #scaling to a 0,1 scale
+X_test_01 = scale01.transform(X_test)
+
+##We will employ gridsearch for this part and use the elastic grid parameter
+from sklearn.grid_search import GridSearchCV
+from sklearn.linear_model import ElasticNet
+from sklearn.metrics import mean_absolute_error
+
+fit = ElasticNet()
+
+params = {
+    'l1_ratio': np.linspace(0,1,15), #15 different ratios between 0 and 1. 0 is Ridge, 1 is Lasso
+    'alpha': np.linspace(0,10,num=150) #150 different alpha values, alpha of 0 is non-regularized regression
+}
+
+gs = GridSearchCV(fit, param_grid=params, verbose = True, cv = 10, scoring = 'mean_absolute_error') #We apply CV 5 times
+
+gs.fit(X_train_01, Y_train) #MAE of -1.635
+gs.best_params_, gs.best_score_
+
+##Best criteria is alpha: 0 with l1_ratio: 0, which means just regression with NO regularization
+##We use these values to to test on the testing data
+fit = ElasticNet(alpha=0,l1_ratio=0).fit(X_train_01, Y_train)
+mean_absolute_error(Y_test, fit.predict(X_test_01)) #MAE on Testing data is 3.1
+
+results = [list(df_raw.columns[1:-1].values.T),list(fit.coef_)]
+pd.DataFrame(results)
+pd.DataFrame([df_raw.columns[1:-1].values.T,fit.coef_.T], columns=['Feature Name','Coefficient'])
+
+
+###Let us plot the true vs predicted values to visualize this result
+plt.scatter(Y_test, fit.predict(X_test_01))
+plt.xlabel('Actual Offensive Rating'); plt.ylabel('Predicted Offensive Rating')
+
+
+###############################################################################################################
 
 
 
@@ -507,6 +592,10 @@ recall_score(ad.predict(X_test_01), Y_test) #We get 41.67%
 
 
 
+
+
+
+##################################NO FEATURE SELECTION, BUT CAN BE INCLUDED############################
 ##Running Feature Selection on best model
 percentiles = range(1, 100, 5)
 results = []
