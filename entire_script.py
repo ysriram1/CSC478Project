@@ -9,7 +9,7 @@ import os
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
-os.chdir('C:/Users/syarlag1/Desktop/Exploring-Basket-Ball-Data')
+os.chdir('/Users/Sriram/Desktop/DePaul/Q3/CSC478/Exploring-Basket-Ball-Data')
 warnings.filterwarnings('ignore')
 
 def createData(returnValues = False):
@@ -212,7 +212,6 @@ pd.DataFrame(Y_def).plot(kind = 'hist'); plt.ylabel('Count'); plt.xlabel('Defens
 pd.DataFrame(Y_off).plot(kind = 'hist'); plt.ylabel('Count'); plt.xlabel('Offensive Rating')#Offensive Rating
 
 
-
 from sklearn.preprocessing import StandardScaler
 from sklearn.decomposition import PCA
 
@@ -225,19 +224,50 @@ print('The first two Principal Components explain %0.02f percent of the variatio
 
 X_pca_2 = PCA(n_components = 2).fit(X_norm).transform(X_norm)
 
-##Looking at PCA for the position values
-posKV = {} #creating a new variable to color the datapoints properly
-for value, key in enumerate(set(Y_position)): posKV[key] = value
-posNumber = [posKV[key] for key in Y_position]
+##PCA plot with position labels
+index_C = np.where(Y_position == 'C')
+index_PF = np.where(Y_position == 'PF')
+index_PG = np.where(Y_position == 'PG')
+index_SF = np.where(Y_position == 'SF')
+index_SG = np.where(Y_position == 'SG')
 
-plt.scatter(X_pca_2[:,0], X_pca_2[:,1], c = posNumber)
+fig = plt.figure()
+ax = fig.add_subplot(111)
+ax.scatter(X_pca_2[index_C,0], X_pca_2[index_C,1], color = 'r', label = 'C')
+ax.scatter(X_pca_2[index_PF,0], X_pca_2[index_PF,1], color = 'b', label = 'PF')
+ax.scatter(X_pca_2[index_PG,0], X_pca_2[index_PG,1], color = 'g', label = 'PG')
+ax.scatter(X_pca_2[index_SF,0], X_pca_2[index_SF,1], color = 'c', label = 'SF')
+ax.scatter(X_pca_2[index_SG,0], X_pca_2[index_SG,1], color = 'm', label = 'SG')
+ax.legend()
 plt.xlabel('Principal Component 1'); plt.ylabel('Principal Component 2')
 plt.title('Plot of first 2 PCs and datapoints colored by player position')
 
-#Based on the plot above, we can see that there is a variation among th 10classes. The distinction
-#is not perfectly visible but there definitely seems to be differences with the classes. The arrangement
-#doesnot look random. The legend has been left out on purpose. It serves no purpose in aiding the point that 
-#point that is being coveryed here.
+## There doesnt appear to be clear groupings within the positions as is, but it 
+## appears that there might be if we combine the C, PF labels and PG, SF, SG labels:
+index_CPF = np.concatenate((index_C, index_PF), axis = 1)
+index_PGSFSG = np.concatenate((index_PG, index_SF, index_SG), axis = 1)
+fig = plt.figure()
+ax = fig.add_subplot(111)
+ax.scatter(X_pca_2[index_CPF,0], X_pca_2[index_CPF,1], color = 'r', label = 'C+PF')
+ax.scatter(X_pca_2[index_PGSFSG,0], X_pca_2[index_PGSFSG,1], color = 'b', label = 'PG+SF+SG')
+ax.legend()
+plt.xlabel('Principal Component 1'); plt.ylabel('Principal Component 2')
+plt.title('Plot of first 2 PCs and datapoints colored by combined positions')
+
+
+##PCA plot with Hall of Fame labels
+index_HY = np.where(Y_HofF == 1)
+index_HN = np.where(Y_HofF == 0)
+fig = plt.figure()
+ax = fig.add_subplot(111)
+ax.scatter(X_pca_2[index_HY,0], X_pca_2[index_HY,1], color = 'r', label = 'In Hall of Fame')
+ax.scatter(X_pca_2[index_HN,0], X_pca_2[index_HN,1], color = 'b', label = 'Not in Hall of Fame')
+ax.legend()
+plt.xlabel('Principal Component 1'); plt.ylabel('Principal Component 2')
+plt.title('Plot of first 2 PCs and datapoints colored by player Hall of Fame Status')
+
+
+
 
 ##Looking at the variation between defensive Rating and offensive Rating by the player position
 pos_rating = pd.DataFrame(Y_position); pos_rating['Def'] = Y_def; pos_rating['Off'] = Y_off
@@ -265,11 +295,15 @@ from sklearn.cluster import KMeans
 from sklearn.metrics import homogeneity_score, completeness_score
 from sklearn.preprocessing import MinMaxScaler
 
+posKV = {} #creating a new variable to color the datapoints properly
+for value, key in enumerate(set(Y_position)): posKV[key] = value
+posNumber = [posKV[key] for key in Y_position]
+
 predictions = KMeans(n_clusters=5).fit_predict(MinMaxScaler().fit_transform(X))
 
 homogeneity_score(posNumber, predictions)
 
-completeness_score(posNumber, predictions)
+completeness_score(posNumber, predictions) #as expected the values are low
 
 ##based on the pca variable from data exploration:
 
@@ -291,7 +325,47 @@ homogeneity_score(posNumber, predictions)
 
 completeness_score(posNumber, predictions)##We get slightly higher scores (but still very similar)
 
-#######################################################
+#we plot these clusters on PC1 vs PC2 to better visualize them
+
+index_0 = np.where(predictions == 0)
+index_1 = np.where(predictions == 1)
+index_2 = np.where(predictions == 2)
+index_3 = np.where(predictions == 3)
+index_4 = np.where(predictions == 4)
+
+
+fig = plt.figure()
+ax = fig.add_subplot(111)
+ax.scatter(X_pca_2[index_0,0], X_pca_2[index_0,1], color = 'r', label = 'Cluster 1')
+ax.scatter(X_pca_2[index_1,0], X_pca_2[index_1,1], color = 'b', label = 'Cluster 2')
+ax.scatter(X_pca_2[index_2,0], X_pca_2[index_2,1], color = 'g', label = 'Cluster 3')
+ax.scatter(X_pca_2[index_3,0], X_pca_2[index_3,1], color = 'c', label = 'Cluster 4')
+ax.scatter(X_pca_2[index_4,0], X_pca_2[index_4,1], color = 'm', label = 'Cluster 5')
+ax.legend()
+plt.xlabel('Principal Component 1'); plt.ylabel('Principal Component 2')
+plt.title('Plot of first 2 PCs and datapoints by predicted clusters')
+
+##We re-perform clustering with the combined positions
+
+predictions_combined = KMeans(n_clusters=2).fit_predict(MinMaxScaler().fit_transform(X))
+
+posNumber_01 = [1 if (i == 1 or i == 2) else 0 for i in posNumber]
+
+homogeneity_score(posNumber_01, predictions_combined)
+completeness_score(posNumber_01, predictions_combined)
+
+index_0 = np.where(predictions_combined == 0)
+index_1 = np.where(predictions_combined == 1)
+
+fig = plt.figure()
+ax = fig.add_subplot(111)
+ax.scatter(X_pca_2[index_0,0], X_pca_2[index_0,1], color = 'r', label = 'Cluster 1')
+ax.scatter(X_pca_2[index_1,0], X_pca_2[index_1,1], color = 'b', label = 'Cluster 2')
+ax.legend()
+plt.xlabel('Principal Component 1'); plt.ylabel('Principal Component 2')
+plt.title('Plot of first 2 PCs and datapoints by predicted clusters')
+
+#################################################################################################
 ####Supervised####
 
 
