@@ -9,7 +9,7 @@ import os
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
-os.chdir('/Users/Sriram/Desktop/DePaul/Q3/CSC478/Exploring-Basket-Ball-Data')
+os.chdir('C:/Users/syarlag1/Desktop/Exploring-Basket-Ball-Data')
 warnings.filterwarnings('ignore')
 
 def createData(returnValues = False):
@@ -191,9 +191,6 @@ Y_HofF = halloffameVar(names = player)
 #####################################################################################################
 
 #Data Exploration
-##First we perform PCA and find the number of PCs contibute to 95% of the variation
-##In order to do this, we first center and scale the data
-
 #Taking at a look at the distribution of the Postion Variable
 
 pd.DataFrame(Y_position).groupby('Position')['Position'].count().plot(kind = 'bar') #relatively evenly spread
@@ -211,7 +208,7 @@ pd.DataFrame(Y_def).plot(kind = 'hist'); plt.ylabel('Count'); plt.xlabel('Defens
 
 pd.DataFrame(Y_off).plot(kind = 'hist'); plt.ylabel('Count'); plt.xlabel('Offensive Rating')#Offensive Rating
 
-
+#Performing PCA, Centering and Scaling the data first
 from sklearn.preprocessing import StandardScaler
 from sklearn.decomposition import PCA
 
@@ -306,7 +303,6 @@ homogeneity_score(posNumber, predictions)
 completeness_score(posNumber, predictions) #as expected the values are low
 
 ##based on the pca variable from data exploration:
-
 val = 0
 count = 0
 for i in pca.explained_variance_ratio_:
@@ -346,13 +342,19 @@ plt.xlabel('Principal Component 1'); plt.ylabel('Principal Component 2')
 plt.title('Plot of first 2 PCs and datapoints by predicted clusters')
 
 ##We re-perform clustering with the combined positions
-
 predictions_combined = KMeans(n_clusters=2).fit_predict(MinMaxScaler().fit_transform(X))
 
-posNumber_01 = [1 if (i == 1 or i == 2) else 0 for i in posNumber]
+posNumber_01 = [1 if (i == 0 or i == 1) else 0 for i in posNumber]
 
-homogeneity_score(posNumber_01, predictions_combined)
+homogeneity_score(list(posNumber_01), list(predictions_combined))
 completeness_score(posNumber_01, predictions_combined)
+
+predictions_combined = KMeans(n_clusters=2).fit_predict(MinMaxScaler().fit_transform(X_pca_12))
+
+homogeneity_score(list(posNumber_01), list(predictions_combined))
+completeness_score(posNumber_01, predictions_combined)
+
+accuracy = sum(posNumber_01 == predictions_combined )/len(posNumber_01); accuracy
 
 index_0 = np.where(predictions_combined == 0)
 index_1 = np.where(predictions_combined == 1)
@@ -445,7 +447,7 @@ def calc_params(X, y, clf, param_values, param_name, K, metric = 'accuracy'):
     return train_scores, test_scores
 
 
-#TASK 2: The Position Variable
+#The Position Variable
 ##Test-train split
 #We split the data into testing and training data (67% and 33%)
 from sklearn.cross_validation import train_test_split
@@ -501,7 +503,7 @@ print('the mean accuracy through LDA on training data is %0.2f'%ldaAccuracyScore
 ldaFit = LDA().fit(X_train_01, Y_train)
 accuracy_score(Y_test, ldaFit.predict(X_test_01)) #highest accuracy of 63.67%; best accuracy
 
-#TASK 3: The HofF variable
+#The HofF variable
 ###Since the HofF variable is very unbalanced, we stick to ensemble based approaches AdaBoost, Random Forest
 ###Our main metric for performance is the senstivity NOT accuracy
 #Stratified Test-train split
@@ -535,7 +537,7 @@ nEst = range(5, 101, 5)
 train_scores, test_scores = calc_params(X_train_01, Y_train, rf, nEst, 'n_estimators', 5, metric = 'recall')
 pd.DataFrame(np.array([test_scores, nEst]).T, columns = ['Test Recall', 'Number of Estimators'])
 
-##Based on the graphs and outputs, minimum split size of 4 with split size of 60 gives the best results
+##Based on the graphs and outputs, minimum split size of 2 with split size of 5 gives the best results
 ##We find the recall on the test data using these parameters
 rf = RandomForestClassifier(n_estimators = 5,min_samples_leaf = 2, random_state=99).fit(X_train_01, Y_train)
 recall_score(rf.predict(X_test_01), Y_test) #We get 57%
@@ -556,12 +558,11 @@ pd.DataFrame(np.array([test_scores, nEst]).T, columns = ['Test Recall', 'Number 
 ##From the graph and table we see that there are much better results than before
 ##Highest recall is with 10 estimators, we use that to predict on the testing data
 
-ad = AdaBoostClassifier(n_estimators = 65, random_state=99).fit(X_train_01, Y_train)
-recall_score(ad.predict(X_test_01), Y_test) #We get 66.67%
+ad = AdaBoostClassifier(n_estimators = 10, random_state=99).fit(X_train_01, Y_train)
+recall_score(ad.predict(X_test_01), Y_test) #We get 45.45%
 
 #TASK 4: Prediction on Defensive and Offensive Ratings
 ##Our performance metric is Mean Absolute Error (MAE)
-
 ###Def Rating
 
 ##Spliting the data into train and test (67% train)
